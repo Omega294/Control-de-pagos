@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guía de Usuario - SoftballPay</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --primary-color: #6366f1;
+            --sidebar-width: 280px;
+            --card-bg: #ffffff;
+            --border-color: #e2e8f0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            line-height: 1.6;
+            display: flex;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 40px;
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            border: 1px solid var(--border-color);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: var(--primary-color);
+            margin-bottom: 2rem;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 1rem;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            color: #334155;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        h3 {
+            font-size: 1.1rem;
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: #475569;
+        }
+
+        p {
+            margin-bottom: 1rem;
+            color: var(--text-secondary);
+        }
+
+        ul,
+        ol {
+            margin-left: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+        }
+
+        .highlight-box {
+            background-color: #f1f5f9;
+            border-left: 4px solid var(--primary-color);
+            padding: 1.5rem;
+            margin: 2rem 0;
+            border-radius: 4px;
+        }
+
+        .highlight-box p {
+            margin-bottom: 0;
+        }
+
+        .alert-box {
+            background-color: #fff1f2;
+            border-left: 4px solid #ef4444;
+            padding: 1.5rem;
+            margin: 2rem 0;
+            border-radius: 4px;
+        }
+
+        .badge {
+            background: #e0e7ff;
+            color: #4338ca;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .step {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .step-number {
+            background: var(--primary-color);
+            color: white;
+            min-width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        footer {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border-color);
+            text-align: center;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>📖 Guía de Usuario: SoftballPay</h1>
+
+        <p>Bienvenido al manual del sistema de control de pagos para el torneo de softball. Esta guía te ayudará a
+            entender cómo gestionar a los 100 jugadores y sus pagos mixtos de forma eficiente.</p>
+
+        <h2>🚀 1. Cómo Iniciar</h2>
+        <div class="step">
+            <div class="step-number">1</div>
+            <div>Localiza la carpeta <strong>softball-tracker</strong> en tu escritorio.</div>
+        </div>
+        <div class="step">
+            <div class="step-number">2</div>
+            <div>Busca el archivo <span class="badge">index.html</span>.</div>
+        </div>
+        <div class="step">
+            <div class="step-number">3</div>
+            <div>Haz doble clic sobre él. Se abrirá automáticamente en tu navegador preferido.</div>
+        </div>
+
+        <div class="highlight-box">
+            <h3>Concepto de Cálculo Dinámico</h3>
+            <p>La deuda base se registra siempre en <strong>Dólares (USD)</strong>. Sin embargo, para los pagos en
+                Bolívares (BS), el sistema aplica automáticamente un recargo del <strong>30% (diferencial
+                    cambiario)</strong> convirtiendo el monto a Euros antes de aplicar la tasa del día.</p>
+        </div>
+
+        <h2>📊 2. Secciones del Sistema</h2>
+
+        <h3>Panel Principal (Dashboard)</h3>
+        <ul>
+            <li><strong>Recaudado (USD):</strong> Suma total de todos los pagos (indistintamente de la moneda) llevados
+                a su equivalente en dólares.</li>
+            <li><strong>Deuda Pendiente:</strong> Total que falta por recolectar de los 100 jugadores.</li>
+            <li><strong>Actividad Reciente:</strong> Tabla cronológica con los últimos 10 movimientos registrados.</li>
+        </ul>
+
+        <h3>Equipos y Jugadores</h3>
+        <ul>
+            <li>Aquí verás los 5 equipos listados.</li>
+            <li>Cada fila muestra el nombre del jugador y su deuda actual en ambas monedas (USD y BS).</li>
+            <li><strong>Modificar Nombre de Equipo:</strong> Haz clic en el botón <strong>"Acciones"</strong> al lado
+                del nombre del equipo y selecciona la opción <strong>2 (Cambiar nombre)</strong>.</li>
+            <li><strong>Modificar Nombre de Jugador:</strong> Al lado del nombre de cada jugador verás un pequeño icono
+                de lápiz (✏️). Haz clic para cambiar su nombre o moverlo de equipo.</li>
+            <li><strong>Botón Acciones (por equipo):</strong> Al lado de cada nombre de equipo, verás este botón. Sirve
+                para realizar acciones masivas. Por ejemplo, permite <strong>liquidar la deuda completa</strong> de
+                todos los jugadores de ese equipo en un solo clic (útil si un delegado de equipo paga la cuota de todos
+                en divisas).</li>
+            <li>El botón para registrar pagos individuales está disponible en la esquina superior derecha.</li>
+        </ul>
+
+        <h2>⚙️ 3. Operaciones Avanzadas</h2>
+
+        <h3>Carga Masiva de Jugadores (CSV)</h3>
+        <p>Si no quieres editar 100 nombres a mano, puedes cargar una lista desde Excel:</p>
+        <ol>
+            <li>Crea un archivo en Excel con 3 columnas: <strong>Nombre</strong>, <strong>Cédula</strong> y
+                <strong>Equipo</strong>.</li>
+            <li>Guarda ese archivo como formato <strong>CSV (delimitado por comas)</strong>.</li>
+            <li>En la App, ve a la pestaña <strong>Configuración</strong>.</li>
+            <li>En la sección "Carga Masiva", selecciona tu archivo y haz clic en <strong>"Cargar Archivo CSV"</strong>.
+            </li>
+        </ol>
+
+        <div class="highlight-box">
+            <p><strong>Truco Pro:</strong> Si cargas una lista nueva pero usas las mismas Cédulas de identidad, el
+                sistema es lo suficientemente inteligente para mantener los pagos que ya habías registrado anteriormente
+                unidos a esa persona.</p>
+        </div>
+
+        <h3>Actualizar la Tasa del Día</h3>
+        <p>Es vital actualizarla cada mañana o cuando el precio del euro cambie:</p>
+        <ol>
+            <li>En el menú superior, haz clic en <strong>"Actualizar Tasa"</strong>.</li>
+            <li>Introduce el valor nuevo (Ej: 45.0).</li>
+            <li>Presiona confirmar y verás que todas las deudas en BS de los 100 jugadores se ajustan automáticamente.
+            </li>
+        </ol>
+
+        <h3>Registrar un Pago (Mixto)</h3>
+        <p>Sigue estos pasos para registrar un abono:</p>
+        <ol>
+            <li>Haz clic en el botón azul <strong>"+ Registrar Pago"</strong>.</li>
+            <li>Selecciona al <strong>Jugador</strong> de la lista desplegable.</li>
+            <li>Elige la <strong>Moneda</strong> (USD si paga en divisas, BS si paga en bolívares).</li>
+            <li>Escribe el <strong>Monto</strong>.</li>
+            <li>Si el pago es en BS, verifica la <strong>Tasa EUR/BS</strong> (por defecto toma la del día, pero puedes
+                ajustarla si el pago se hizo a otra tasa).</li>
+            <li>Confirma el pago.</li>
+        </ol>
+
+        <div class="alert-box">
+            <h3>⚠️ Importante: Tus Datos</h3>
+            <p>Este sistema utiliza <strong>LocalStorage</strong>. Los datos no se guardan en internet, sino en la
+                memoria de tu navegador en tu computadora. No limpies el historial de navegación "profundo" sin antes
+                saber que esto borrará los registros del torneo.</p>
+        </div>
+
+        <footer>
+            Sistema de Control de Pagos - Desarrollado para el Torneo de Softball
+        </footer>
+    </div>
+</body>
+
+</html>

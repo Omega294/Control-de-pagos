@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Torneo De Laurentis - Control de Pagos</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body>
+    <!-- Overlay de Carga -->
+    <div id="loading-overlay" class="loading-overlay hidden">
+        <div class="spinner"></div>
+        <p>Sincronizando con la nube...</p>
+    </div>
+
+    <!-- Pantalla de Inicio de Sesión -->
+    <div id="view-login" class="login-overlay hidden">
+        <div class="login-card glass-strong">
+            <div class="login-logo">
+                <img src="assets/logo.png" alt="Logo De Laurentis">
+            </div>
+            <h2>Control de Acceso</h2>
+            <p>Torneo De Laurentis Academy Program</p>
+            <div class="login-form mt-6">
+                <div class="form-group">
+                    <label>Usuario</label>
+                    <input type="text" id="login-username" class="form-input" placeholder="Ej: admin">
+                </div>
+                <div class="form-group mt-4">
+                    <label>Contraseña</label>
+                    <input type="password" id="login-password" class="form-input" placeholder="••••••••">
+                </div>
+                <button id="btn-do-login" class="btn btn-primary mt-6" style="width: 100%;">Iniciar Sesión</button>
+            </div>
+            <p id="login-error" class="text-danger mt-4 hidden">Credenciales incorrectas.</p>
+        </div>
+    </div>
+
+    <div class="app-container hidden">
+        <!-- Sidebar / Navegación -->
+        <aside class="sidebar">
+            <div class="logo-area">
+                <div class="logo-icon">
+                    <img src="assets/logo.png" alt="De Laurentis Logo" id="app-logo">
+                </div>
+                <!-- <h2>Torneo De Laurentis</h2> -->
+            </div>
+            <nav class="main-nav">
+                <a href="#" class="nav-item active" data-view="dashboard">
+                    <span class="icon">📊</span> Panel Principal
+                </a>
+                <a href="#" class="nav-item" data-view="teams">
+                    <span class="icon">👥</span> Equipos y Jugadores
+                </a>
+                <a href="#" class="nav-item" data-view="settings">
+                    <span class="icon">⚙️</span> Configuración
+                </a>
+            </nav>
+            <div class="current-rate-widget">
+                <p>Tasa EUR/BS Hoy</p>
+                <div class="rate-value" id="sidebar-rate">45.00</div>
+            </div>
+
+            <div class="sidebar-footer">
+                <div class="current-user-info">
+                    <span class="icon">👤</span>
+                    <span id="display-user-name">Usuario</span>
+                </div>
+                <button id="btn-logout" class="btn-link-danger mt-2">Cerrar Sesión</button>
+            </div>
+        </aside>
+
+        <!-- Contenido Principal -->
+        <main class="main-content">
+            <header class="top-header">
+                <div class="header-title">
+                    <h1 id="page-title">Panel Principal</h1>
+                    <p id="page-subtitle">Resumen general del torneo</p>
+                </div>
+                <div class="header-actions">
+                    <button id="btn-update-rate" class="btn btn-outline">
+                        Actualizar Tasa
+                    </button>
+                    <button id="btn-daily-closure" class="btn btn-outline">
+                        Cierre Diario
+                    </button>
+                    <button id="btn-new-payment" class="btn btn-primary">
+                        + Registrar Pago
+                    </button>
+                </div>
+            </header>
+
+            <!-- Vistas Dinámicas -->
+            <div id="view-dashboard" class="view-section active">
+                <div class="stats-grid">
+                    <div class="stat-card glass">
+                        <div class="stat-icon bg-green">💵</div>
+                        <div class="stat-info">
+                            <h3>Recaudado (USD)</h3>
+                            <h2 id="stat-collected-usd">$0.00</h2>
+                        </div>
+                    </div>
+                    <div class="stat-card glass">
+                        <div class="stat-icon bg-red">📉</div>
+                        <div class="stat-info">
+                            <h3>Deuda Pendiente</h3>
+                            <h2 id="stat-pending-usd">$0.00</h2>
+                        </div>
+                    </div>
+                    <div class="stat-card glass">
+                        <div class="stat-icon bg-blue">👥</div>
+                        <div class="stat-info">
+                            <h3>Jugadores Pagados</h3>
+                            <h2 id="stat-paid-players">0 / 100</h2>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="recent-activity glass mt-6">
+                    <h3>Actividad Reciente</h3>
+                    <div class="table-container">
+                        <table id="recent-payments-table">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Jugador</th>
+                                    <th>Equipo</th>
+                                    <th>Monto</th>
+                                    <th>Equivalente USD</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recent-payments-list">
+                                <!-- Filas dinámicas -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-teams" class="view-section hidden">
+                <div class="view-header-row mb-4">
+                    <h3>Equipos y Jugadores</h3>
+                    <button id="btn-add-team" class="btn btn-primary btn-sm">+ Añadir Equipo</button>
+                </div>
+                <div class="teams-container" id="teams-list">
+                    <!-- Equipos renderizados dinámicamente -->
+                </div>
+            </div>
+
+            <div id="view-settings" class="view-section hidden">
+                <div class="settings-card glass">
+                    <h3>Configuración Global</h3>
+
+                    <div class="form-group mt-4">
+                        <label for="setting-base-cost">Costo Base del Torneo (USD)</label>
+                        <input type="number" id="setting-base-cost" class="form-input" value="100" step="0.01">
+                        <small>El costo total en dólares que debe pagar cada jugador.</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="setting-markup">Recargo BS a EUR (%)</label>
+                        <input type="number" id="setting-markup" class="form-input" value="30">
+                        <small>Porcentaje que se suma para convertir la deuda a Euros antes de pasar a BS.</small>
+                    </div>
+
+                    <div class="form-actions mt-6">
+                        <button id="btn-save-settings" class="btn btn-primary">Guardar Configuración</button>
+                    </div>
+
+                    <hr style="margin: 2rem 0; opacity: 0.1;">
+
+                    <h3>Carga Masiva de Jugadores (CSV)</h3>
+                    <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1rem;">
+                        Sube un archivo CSV con el formato: <strong>Nombre, Cedula, Equipo</strong><br>
+                        <small>Nota: Esto reemplazará la lista actual. Los pagos existentes de jugadores con la misma
+                            cédula se mantendrán.</small>
+                    </p>
+                    <div class="form-group">
+                        <input type="file" id="csv-import-input" accept=".csv" class="form-input">
+                    </div>
+                    <button id="btn-import-csv" class="btn btn-outline" style="width: 100%;">Cargar Archivo CSV</button>
+
+                    <hr class="mt-8 mb-4">
+                    <h3>Conexión a la Nube (Internet)</h3>
+                    <p class="text-secondary mb-4">Ingresa tus credenciales de Supabase para habilitar el acceso desde
+                        cualquier PC.</p>
+                    <div class="form-group">
+                        <label>Supabase URL</label>
+                        <input type="text" id="cloud-url" class="form-input" placeholder="https://xyz.supabase.co">
+                    </div>
+                    <div class="form-group mt-4">
+                        <label>Supabase Anon Key</label>
+                        <input type="text" id="cloud-key" class="form-input"
+                            placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
+                    </div>
+                    <button id="btn-save-cloud-config" class="btn btn-primary mt-4" style="width: 100%;">Conectar y
+                        Sincronizar</button>
+
+                    <hr class="mt-8 mb-4">
+                    <h3>Gestión de Usuarios</h3>
+                    <p class="text-secondary mb-4">Solo administradores pueden gestionar otros usuarios.</p>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Usuario</th>
+                                    <th>Rol</th>
+                                    <th style="text-align: right;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-list">
+                                <!-- Usuarios dinámicos -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <button id="btn-open-add-user" class="btn btn-outline mt-4" style="width: 100%;">+ Añadir
+                        Usuario</button>
+
+                    <div class="mt-8 flex gap-4"
+                        style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid rgba(255,255,255,0.05); display: flex; gap: 1rem;">
+                        <button id="btn-reset-data" class="btn btn-outline" style="flex: 1;">Restaurar Datos de
+                            Fábrica</button>
+                        <button id="btn-empty-data" class="btn btn-danger" style="flex: 1;">Vaciar Base de
+                            Datos</button>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div id="modal-add-team" class="modal hidden">
+        <div class="modal-content glass-strong" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2>Añadir Nuevo Equipo</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Nombre del Equipo</label>
+                    <input type="text" id="add-team-input" class="form-input" placeholder="Nombre del equipo...">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline close-modal">Cancelar</button>
+                <button id="btn-submit-add-team" class="btn btn-primary">Añadir</button>
+            </div>
+        </div>
+    </div>
+    <div id="modal-daily-closure" class="modal hidden">
+        <div class="modal-content glass-strong" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2>Cierre de Caja Diario</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Seleccionar Fecha</label>
+                    <input type="date" id="closure-date-input" class="form-input">
+                </div>
+
+                <div class="stats-grid mt-6" style="grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="stat-card glass" style="padding: 1rem;">
+                        <small style="color: var(--text-secondary);">Recaudado USD</small>
+                        <h3 id="closure-total-usd" style="color: var(--success);">$0.00</h3>
+                    </div>
+                    <div class="stat-card glass" style="padding: 1rem;">
+                        <small style="color: var(--text-secondary);">Recaudado BS</small>
+                        <h3 id="closure-total-bs" style="color: var(--info);">0.00 Bs</h3>
+                    </div>
+                </div>
+
+                <div class="stat-card glass mt-4" style="text-align: center; border: 1px solid var(--success);">
+                    <small style="color: var(--text-secondary);">Total Equivalente (USD)</small>
+                    <h2 id="closure-total-equivalent">$0.00</h2>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary close-modal" style="width: 100%;">Entendido</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-search-player" class="modal hidden">
+        <div class="modal-content glass-strong" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2>Buscar Jugador para Cobro</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Nombre o Cédula</label>
+                    <input type="text" id="search-player-input" class="form-input" placeholder="Escriba para buscar..."
+                        autocomplete="off">
+                </div>
+                <div class="search-results-container mt-4" id="search-results-list"
+                    style="max-height: 350px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.05); border-radius: 8px;">
+                    <!-- Resultados dinámicos -->
+                    <p style="padding: 20px; text-align: center; color: var(--text-secondary);">Ingrese un nombre o
+                        cédula para buscar.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline close-modal">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Detalle del Jugador y Cobro -->
+    <div id="modal-player-detail" class="modal hidden">
+        <div class="modal-content glass-strong player-detail-modal">
+            <div class="modal-header">
+                <h2 id="detail-title">Ficha del Jugador</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body player-detail-grid">
+                <!-- Columna Izquierda: Historial -->
+                <div class="player-detail-history">
+                    <h4>Historial de Pagos</h4>
+                    <div class="history-table-wrapper">
+                        <table class="history-table">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Monto</th>
+                                    <th>Equivalente</th>
+                                    <th></th> <!-- Columna para borrar pago -->
+                                </tr>
+                            </thead>
+                            <tbody id="detail-payments-list">
+                                <!-- Filas dinámicas -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Columna Derecha: Info y Acciones -->
+                <div class="player-detail-form">
+                    <div class="player-main-info-edit">
+                        <h4>Datos del Jugador</h4>
+                        <div class="form-group mini">
+                            <label>Nombre</label>
+                            <input type="text" id="detail-edit-name" class="form-input-sm">
+                        </div>
+                        <div class="form-group mini">
+                            <label>Cédula</label>
+                            <input type="text" id="detail-edit-dni" class="form-input-sm">
+                        </div>
+                        <div class="form-group mini">
+                            <label>Equipo</label>
+                            <select id="detail-edit-team" class="form-input-sm"></select>
+                        </div>
+                        <button id="btn-save-detail-info" class="btn btn-outline btn-sm mt-2"
+                            style="width: 100%;">Actualizar Datos</button>
+                    </div>
+
+                    <div class="debt-cards mt-6">
+                        <div class="stat-card glass debt-item">
+                            <span>Deuda Pendiente (USD)</span>
+                            <h2 id="detail-debt-usd" class="text-danger">$0.00</h2>
+                        </div>
+                        <div class="stat-card glass debt-item">
+                            <span>Deuda Pendiente (BS)</span>
+                            <h2 id="detail-debt-bs">0.00 Bs</h2>
+                        </div>
+                    </div>
+
+                    <div class="payment-registration-box">
+                        <h4>Registrar Abono</h4>
+                        <div class="form-group">
+                            <label>Moneda</label>
+                            <select id="detail-pay-currency" class="form-input">
+                                <option value="USD">Dólares (Divisas)</option>
+                                <option value="BS">Bolívares (BS)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Monto</label>
+                            <input type="number" id="detail-pay-amount" class="form-input" placeholder="Ej: 20"
+                                step="0.01">
+                        </div>
+                        <div class="form-group hidden" id="detail-pay-rate-group">
+                            <label>Tasa EUR/BS</label>
+                            <input type="number" id="detail-pay-rate" class="form-input" step="0.01">
+                        </div>
+                        <div class="preview-box">
+                            Equivalente: <strong id="detail-pay-preview-usd">$0.00 USD</strong>
+                        </div>
+                        <button id="btn-submit-detail-payment" class="btn btn-primary mt-4"
+                            style="width: 100%;">Confirmar Pago</button>
+                    </div>
+
+                    <button id="btn-delete-player" class="btn btn-link-danger">Eliminar Jugador</button>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline close-modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-rate" class="modal hidden">
+        <div class="modal-content glass-strong">
+            <div class="modal-header">
+                <h2>Actualizar Tasa del Día</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Nueva Tasa EUR/BS</label>
+                    <input type="number" id="update-rate-input" class="form-input" step="0.01">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline close-modal">Cancelar</button>
+                <button id="btn-submit-rate" class="btn btn-primary">Actualizar Tasa</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Cierre Diario -->
+    <div id="modal-daily-closure" class="modal hidden">
+        <div class="modal-content glass-strong" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2>Cierre Diario</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group mb-6">
+                    <label>Fecha del Cierre</label>
+                    <input type="date" id="closure-date-input" class="form-input">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="stat-mini-card">
+                        <small>Efectivo USD</small>
+                        <h3 id="closure-total-usd">$0.00</h3>
+                    </div>
+                    <div class="stat-mini-card">
+                        <small>Bolívares (BS)</small>
+                        <h3 id="closure-total-bs">0.00 Bs</h3>
+                    </div>
+                </div>
+                <div class="total-closure-equivalent mt-6 glass" style="padding: 1.5rem; text-align: center;">
+                    <p style="color: var(--text-secondary); margin-bottom: 0.5rem;">Total Equivalente en USD</p>
+                    <h2 id="closure-total-equivalent" style="font-size: 2.5rem; color: var(--success);">$0.00</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Editar Equipo -->
+    <div id="modal-edit-team" class="modal hidden">
+        <div class="modal-content glass-strong">
+            <div class="modal-header">
+                <h2>Editar Nombre del Equipo</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="edit-team-old-name">
+                <div class="form-group">
+                    <label>Nombre del Equipo</label>
+                    <input type="text" id="edit-team-input" class="form-input">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline close-modal">Cancelar</button>
+                <button id="btn-submit-edit-team" class="btn btn-primary">Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="modal-add-user" class="modal hidden">
+        <div class="modal-content glass-strong" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2>Añadir Nuevo Usuario</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Nombre de Usuario</label>
+                    <input type="text" id="new-user-username" class="form-input" placeholder="Ej: maria">
+                </div>
+                <div class="form-group mt-4">
+                    <label>Contraseña</label>
+                    <input type="password" id="new-user-password" class="form-input" placeholder="••••••••">
+                </div>
+                <div class="form-group mt-4">
+                    <label>Rol</label>
+                    <select id="new-user-role" class="form-input">
+                        <option value="observer">Observador (Solo Lectura)</option>
+                        <option value="admin">Administrador</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="btn-submit-add-user" class="btn btn-primary" style="width: 100%;">Crear Usuario</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-change-password" class="modal hidden">
+        <div class="modal-content glass-strong" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2>Cambiar Contraseña</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-4">Ingresa la nueva contraseña para: <strong id="change-pass-username-display"></strong>
+                </p>
+                <div class="form-group">
+                    <label>Nueva Contraseña</label>
+                    <input type="password" id="change-pass-new-password" class="form-input" placeholder="••••••••">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="btn-submit-change-password" class="btn btn-primary" style="width: 100%;">Actualizar
+                    Contraseña</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de confirmación de contraseña (para acciones críticas) -->
+    <div id="modal-confirm-auth" class="modal hidden">
+        <div class="modal-content glass-strong" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2>Confirmar Identidad</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-4">Por favor, ingresa tu contraseña para autorizar esta acción técnica.</p>
+                <div class="form-group">
+                    <label>Contraseña</label>
+                    <input type="password" id="confirm-auth-password" class="form-input" placeholder="••••••••">
+                </div>
+                <p id="confirm-auth-error" class="text-danger mt-2 hidden">Contraseña incorrecta.</p>
+            </div>
+            <div class="modal-footer">
+                <button id="btn-submit-confirm-auth" class="btn btn-primary" style="width: 100%;">Autorizar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
