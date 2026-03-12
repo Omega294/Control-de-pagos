@@ -14,7 +14,7 @@ const defaultState = {
     session: null, // { username, role }
     cloudConfig: {
         url: 'https://ivpwdljlczqszfhheexy.supabase.co',
-        key: 'sb_publishable_fhOPc5AmtA3wPiILjsQddw_0Ft9AXc9',
+        key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml2cHdkbGpsY3pxc3pmaGhlZXh5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNDc1MjgsImV4cCI6MjA4ODgyMzUyOH0.YtOPAjOYtZ3vJ4q-N3X9UFuiEV3neqgPyuTwS2GPU-Q',
         enabled: true
     }
 };
