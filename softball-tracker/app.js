@@ -73,6 +73,8 @@ async function initApp() {
         }
 
         setupEventListeners();
+        // Always require login on page load — never restore a persisted session
+        delete appState.session;
         updateAuthUI();
         renderApp();
         console.log("App ready.");
@@ -142,7 +144,10 @@ function loadData() {
 
 function saveData() {
     try {
-        localStorage.setItem(STATE_KEY, JSON.stringify(appState));
+        // Strip session before persisting — login must happen on every visit
+        const toSave = { ...appState };
+        delete toSave.session;
+        localStorage.setItem(STATE_KEY, JSON.stringify(toSave));
         if (supabaseClient) saveToCloud();
     } catch (e) {
         console.error("Error saving data:", e);
@@ -159,7 +164,10 @@ async function syncFromCloud() {
             .single();
 
         if (data && data.payload) {
-            appState = { ...appState, ...data.payload };
+            // Never restore session from cloud
+            const cloudData = { ...data.payload };
+            delete cloudData.session;
+            appState = { ...appState, ...cloudData };
             localStorage.setItem(STATE_KEY, JSON.stringify(appState));
         } else if (error && error.code === 'PGRST116') {
             await saveToCloud();
@@ -172,9 +180,12 @@ async function syncFromCloud() {
 async function saveToCloud() {
     if (!supabaseClient) return;
     try {
+        // Strip session before uploading — never persist login state to cloud
+        const cloudPayload = { ...appState };
+        delete cloudPayload.session;
         await supabaseClient
             .from('tournament_data')
-            .upsert({ id: 'default', payload: appState });
+            .upsert({ id: 'default', payload: cloudPayload });
     } catch (e) {
         console.error("Cloud save error:", e);
     }
