@@ -561,15 +561,27 @@ function setupEventListeners() {
     });
 
     bind('btn-save-cloud-config', 'click', async () => {
-        const url = el('cloud-url').value;
-        const key = el('cloud-key').value;
-        appState.cloudConfig = { url, key, enabled: true };
-        saveData();
-        showLoading(true);
-        await initSupabase();
-        await syncFromCloud();
-        showLoading(false);
-        renderApp();
+        try {
+            const url = el('cloud-url').value;
+            const key = el('cloud-key').value;
+            if (!url || !key) return alert("Por favor ingresa la URL y la Key");
+            
+            appState.cloudConfig = { url, key, enabled: true };
+            saveData();
+            showLoading(true);
+            await initSupabase();
+            if (!supabaseClient) throw new Error("No se pudo conectar a Supabase");
+            
+            await syncFromCloud();
+            showLoading(false);
+            renderApp();
+            alert("✅ Sincronización exitosa");
+        } catch (e) {
+            console.error("Manual sync error:", e);
+            showLoading(false);
+            setCloudStatus('offline', 'Error Manual');
+            alert("❌ Error: " + (e.message || "No se pudo conectar"));
+        }
     });
 
     bind('btn-do-login', 'click', handleLogin);
