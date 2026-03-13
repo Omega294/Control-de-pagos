@@ -89,6 +89,8 @@ async function initApp() {
                 console.warn("Initial sync failed:", e.message);
                 setCloudStatus('offline', 'Error Sync Inicial');
             }
+        } else {
+            setCloudStatus('offline', 'Sin conexión');
         }
 
         // Ensure default users and correct format
