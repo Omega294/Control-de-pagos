@@ -1,6 +1,15 @@
 // State Management
 const STATE_KEY = 'softball_tournament_data';
 
+// Hash a password using SHA-256 (Web Crypto API — no external libraries needed)
+async function hashPassword(plain) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(plain);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 const defaultState = {
     baseCostUSD: 100,
     currentRateEurBs: 45.0,
@@ -9,13 +18,15 @@ const defaultState = {
     players: [],
     payments: [], // { id, playerId, amount, currency, rateEurBs, equivalentUsd, date }
     users: [
-        { username: 'admin', password: 'admin123', role: 'admin' }
+        // passwordHash = SHA-256 de 'admin123'
+        { username: 'admin', passwordHash: '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', role: 'admin' }
     ],
     session: null, // { username, role }
     cloudConfig: {
-        url: 'https://ivpwdljlczqszfhheexy.supabase.co',
-        key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml2cHdkbGpsY3pxc3pmaGhlZXh5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNDc1MjgsImV4cCI6MjA4ODgyMzUyOH0.YtOPAjOYtZ3vJ4q-N3X9UFuiEV3neqgPyuTwS2GPU-Q',
-        enabled: true
+        // Configura la URL y key desde el panel de Ajustes — no las guardes aquí
+        url: '',
+        key: '',
+        enabled: false
     }
 };
 
@@ -149,11 +160,20 @@ function loadData() {
     }
 }
 
+// Elimina campos 'password' en texto plano del array de usuarios antes de persistir
+function sanitizeUsers(users = []) {
+    return users.map(u => {
+        const safe = { ...u };
+        delete safe.password; // nunca guardar texto plano
+        return safe;
+    });
+}
+
 function saveData() {
     try {
-        // Strip session before persisting — login must happen on every visit
         const toSave = { ...appState };
         delete toSave.session;
+        toSave.users = sanitizeUsers(toSave.users);
         localStorage.setItem(STATE_KEY, JSON.stringify(toSave));
         if (supabaseClient) saveToCloud();
     } catch (e) {
@@ -187,9 +207,10 @@ async function syncFromCloud() {
 async function saveToCloud() {
     if (!supabaseClient) return;
     try {
-        // Strip session before uploading — never persist login state to cloud
         const cloudPayload = { ...appState };
         delete cloudPayload.session;
+        delete cloudPayload.cloudConfig; // no subir URL/key a la nube
+        cloudPayload.users = sanitizeUsers(cloudPayload.users);
         await supabaseClient
             .from('tournament_data')
             .upsert({ id: 'default', payload: cloudPayload });
@@ -515,12 +536,13 @@ function setupEventListeners() {
     bind('btn-logout', 'click', () => { if (confirm("¿Salir?")) { appState.session = null; saveData(); location.reload(); } });
 
     bind('btn-open-add-user', 'click', () => el('modal-add-user').classList.remove('hidden'));
-    bind('btn-submit-add-user', 'click', () => {
+    bind('btn-submit-add-user', 'click', async () => {
         const u = el('new-user-username').value;
         const p = el('new-user-password').value;
         const r = el('new-user-role').value;
         if (u && p) {
-            appState.users.push({ username: u, password: p, role: r });
+            const hash = await hashPassword(p);
+            appState.users.push({ username: u, passwordHash: hash, role: r });
             saveData();
             renderUsersList();
             el('modal-add-user').classList.add('hidden');
@@ -528,11 +550,19 @@ function setupEventListeners() {
     });
 }
 
-function handleLogin() {
+async function handleLogin() {
     const u = el('login-username').value;
     const p = el('login-password').value;
-    const user = appState.users.find(x => x.username === u && x.password === p);
+    const hash = await hashPassword(p);
+    // Soporte legacy: usuarios que aún tengan 'password' en texto plano (migración automática)
+    const user = appState.users.find(x => x.username === u && (x.passwordHash === hash || (!x.passwordHash && x.password === p)));
     if (user) {
+        // Migrar a hash si aún usaba texto plano
+        if (!user.passwordHash) {
+            user.passwordHash = hash;
+            delete user.password;
+            saveData();
+        }
         appState.session = { username: user.username, role: user.role };
         saveData();
         updateAuthUI();
@@ -557,7 +587,26 @@ function renderUsersList() {
 
 window.changePass = (u) => {
     el('change-pass-username-display').textContent = u;
+    el('change-pass-new-password').value = '';
     el('modal-change-password').classList.remove('hidden');
+
+    const btn = document.getElementById('btn-submit-change-password');
+    // Replace to avoid stacking event listeners
+    const newBtn = btn.cloneNode(true);
+    btn.parentNode.replaceChild(newBtn, btn);
+    newBtn.addEventListener('click', async () => {
+        const newPass = el('change-pass-new-password').value;
+        if (!newPass) return alert('Escribe una nueva contraseña');
+        const hash = await hashPassword(newPass);
+        const user = appState.users.find(x => x.username === u);
+        if (user) {
+            user.passwordHash = hash;
+            delete user.password; // eliminar texto plano si existía
+            saveData();
+            el('modal-change-password').classList.add('hidden');
+            alert('Contraseña actualizada');
+        }
+    });
 };
 window.deleteUser = (u) => {
     if (confirm("¿Eliminar?")) {
