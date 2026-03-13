@@ -138,10 +138,11 @@ async function initApp() {
             appState.users = [{ username: 'admin', password: 'admin123', role: 'admin' }];
         }
 
-        // Initial dummy data if empty
+        // Initial dummy data if empty — only save locally, NEVER push to cloud during init
+        // (pushing here would overwrite cloud data with an empty/default local state)
         if (appState.players.length === 0) {
             generateDummyData();
-            saveData();
+            localStorage.setItem(STATE_KEY, JSON.stringify({ ...appState, session: undefined }));
         }
 
         setupEventListeners();
