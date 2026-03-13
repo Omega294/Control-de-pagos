@@ -625,9 +625,8 @@ async function handleLogin() {
     // Soporta: hash SHA-256 (HTTPS), texto plano legacy, y fallback cuando crypto no está disponible (file://)
     const user = appState.users.find(x => {
         if (x.username !== u) return false;
-        if (hash && x.passwordHash) return x.passwordHash === hash;
-        if (hash && !x.passwordHash) return false; // tiene hash pero usuario no — rechazar
-        return x.password === p; // fallback texto plano (file:// o usuario legacy)
+        if (x.passwordHash && hash) return x.passwordHash === hash; // usuario con hash
+        return x.password === p; // usuario legacy con texto plano
     });
     if (user) {
         appState.session = { username: user.username, role: user.role };
