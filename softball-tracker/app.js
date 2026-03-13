@@ -22,10 +22,21 @@ const defaultState = {
 let supabaseClient = null;
 let appState = { ...defaultState };
 
-function initSupabase() {
+async function initSupabase() {
     if (appState.cloudConfig?.url && appState.cloudConfig?.key) {
+        // Retry logic if script is still loading
+        for (let i = 0; i < 5; i++) {
+            if (window.supabase) break;
+            await new Promise(r => setTimeout(r, 500));
+        }
+
         try {
-            supabaseClient = window.supabase?.createClient(appState.cloudConfig.url, appState.cloudConfig.key);
+            if (window.supabase) {
+                supabaseClient = window.supabase.createClient(appState.cloudConfig.url, appState.cloudConfig.key);
+            } else {
+                console.error("Supabase script not found");
+                supabaseClient = null;
+            }
         } catch (e) {
             console.error("Supabase init error:", e);
             supabaseClient = null;
@@ -66,7 +77,7 @@ async function initApp() {
     try {
         console.log("App starting...");
         loadData();
-        initSupabase();
+        await initSupabase();
 
         if (supabaseClient) {
             setCloudStatus('syncing');
@@ -417,6 +428,12 @@ function setupEventListeners() {
             view.classList.remove('hidden');
             if (nav.dataset.view === 'dashboard') renderDashboard();
             if (nav.dataset.view === 'teams') renderTeams();
+            if (nav.dataset.view === 'settings') {
+                el('cloud-url').value = appState.cloudConfig?.url || '';
+                el('cloud-key').value = appState.cloudConfig?.key || '';
+                el('setting-base-cost').value = appState.baseCostUSD;
+                el('setting-markup').value = (appState.markupPercentage * 100).toFixed(0);
+            }
             // Close sidebar on mobile after navigation
             closeMobileSidebar();
         });
@@ -549,7 +566,7 @@ function setupEventListeners() {
         appState.cloudConfig = { url, key, enabled: true };
         saveData();
         showLoading(true);
-        initSupabase();
+        await initSupabase();
         await syncFromCloud();
         showLoading(false);
         renderApp();
