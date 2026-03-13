@@ -2,11 +2,17 @@
 const STATE_KEY = 'softball_tournament_data';
 
 async function hashPassword(plain) {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(plain);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    // crypto.subtle solo funciona en HTTPS/localhost, no en file://
+    if (!crypto?.subtle) return null;
+    try {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(plain);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    } catch (e) {
+        return null;
+    }
 }
 
 const defaultState = {
@@ -616,8 +622,13 @@ async function handleLogin() {
     const u = el('login-username').value;
     const p = el('login-password').value;
     const hash = await hashPassword(p);
-    // Soporta usuarios con passwordHash (nuevo) y password en texto plano (legacy)
-    const user = appState.users.find(x => x.username === u && (x.passwordHash === hash || (!x.passwordHash && x.password === p)));
+    // Soporta: hash SHA-256 (HTTPS), texto plano legacy, y fallback cuando crypto no está disponible (file://)
+    const user = appState.users.find(x => {
+        if (x.username !== u) return false;
+        if (hash && x.passwordHash) return x.passwordHash === hash;
+        if (hash && !x.passwordHash) return false; // tiene hash pero usuario no — rechazar
+        return x.password === p; // fallback texto plano (file:// o usuario legacy)
+    });
     if (user) {
         appState.session = { username: user.username, role: user.role };
         saveData();
