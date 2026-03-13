@@ -37,6 +37,11 @@
                 </div>
                 <button id="btn-do-login" class="btn btn-primary mt-6" style="width: 100%;">Iniciar Sesión</button>
             </div>
+            <div id="login-cloud-status" class="mt-4" style="display:flex; align-items:center; gap:0.6rem; justify-content:center; font-size:0.82rem; color:var(--text-secondary);">
+                <div id="login-sync-led" class="led-dot syncing"></div>
+                <span id="login-sync-text">Conectando con la nube...</span>
+            </div>
+            <button id="btn-login-sync" class="btn btn-outline mt-2 hidden" style="width:100%; font-size:0.85rem;">↺ Reintentar Sincronización</button>
             <p id="login-error" class="text-danger mt-4 hidden">Credenciales incorrectas.</p>
         </div>
     </div>
@@ -557,7 +562,7 @@
         </div>
     </div>
 
-    <script src="app.js?v=5"></script>
+    <script src="app.js?v=6"></script>
 </body>
 
 </html>

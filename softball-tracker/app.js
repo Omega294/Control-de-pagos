@@ -58,6 +58,28 @@ async function initSupabase() {
     }
 }
 
+// Utility to update login screen sync status
+function setLoginSyncStatus(status, message) {
+    const led = document.getElementById('login-sync-led');
+    const text = document.getElementById('login-sync-text');
+    const btn = document.getElementById('btn-login-sync');
+    if (!led || !text) return;
+    led.classList.remove('online', 'offline', 'syncing');
+    if (status === 'syncing') {
+        led.classList.add('syncing');
+        text.textContent = message || 'Sincronizando con la nube...';
+        if (btn) btn.classList.add('hidden');
+    } else if (status === 'online') {
+        led.classList.add('online');
+        text.textContent = message || 'Datos actualizados ✓';
+        if (btn) btn.classList.add('hidden');
+    } else {
+        led.classList.add('offline');
+        text.textContent = message || 'Sin conexión — datos locales';
+        if (btn) btn.classList.remove('hidden');
+    }
+}
+
 // Utility to update visual cloud status
 function setCloudStatus(status, message) {
     const led = el('cloud-led');
@@ -96,15 +118,19 @@ async function initApp() {
         await initSupabase();
         if (supabaseClient) {
             setCloudStatus('syncing');
+            setLoginSyncStatus('syncing');
             try {
                 await syncFromCloud();
                 setCloudStatus('online');
+                setLoginSyncStatus('online');
             } catch (e) {
                 console.warn("Initial sync failed:", e.message);
                 setCloudStatus('offline', 'Error Sync Inicial');
+                setLoginSyncStatus('offline', 'Fallo al sincronizar — reintenta');
             }
         } else {
             setCloudStatus('offline', 'Sin conexión');
+            setLoginSyncStatus('offline', 'Sin conexión a la nube');
         }
 
         // Ensure default users and correct format
@@ -597,6 +623,22 @@ function setupEventListeners() {
             showLoading(false);
             setCloudStatus('offline', 'Error Manual');
             alert("❌ Error: " + (e.message || "No se pudo conectar"));
+        }
+    });
+
+    bind('btn-login-sync', 'click', async () => {
+        setLoginSyncStatus('syncing');
+        el('login-error').classList.add('hidden');
+        try {
+            if (!supabaseClient) await initSupabase();
+            if (!supabaseClient) throw new Error('No se pudo conectar');
+            await syncFromCloud();
+            setLoginSyncStatus('online');
+            setCloudStatus('online');
+        } catch (e) {
+            console.warn("Manual login sync failed:", e.message);
+            setLoginSyncStatus('offline', 'Error al sincronizar — verifica tu red');
+            setCloudStatus('offline', 'Error Sync');
         }
     });
 
