@@ -1063,3 +1063,339 @@ option {
 .hidden {
     display: none !important;
 }
+
+/* ===== HAMBURGER MENU BUTTON ===== */
+.hamburger-btn {
+    display: none;
+    background: none;
+    border: 1px solid var(--glass-border);
+    color: var(--text-primary);
+    font-size: 1.5rem;
+    padding: 0.4rem 0.7rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+    line-height: 1;
+}
+
+.hamburger-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* Sidebar overlay for mobile */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 998;
+}
+
+.sidebar-overlay.active {
+    display: block;
+}
+
+/* ===== RESPONSIVE: TABLET (≤ 1024px) ===== */
+@media (max-width: 1024px) {
+    .main-content {
+        padding: 2rem 1.5rem;
+    }
+
+    .sidebar {
+        width: 220px;
+        padding: 1.5rem 1rem;
+    }
+
+    .header-title h1 {
+        font-size: 1.6rem;
+    }
+
+    .player-detail-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .player-detail-modal {
+        max-width: 95vw !important;
+    }
+}
+
+/* ===== RESPONSIVE: MOBILE (≤ 768px) ===== */
+@media (max-width: 768px) {
+    /* Show hamburger */
+    .hamburger-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Sidebar: hidden by default, slide-in overlay */
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: -280px;
+        width: 260px;
+        height: 100vh;
+        z-index: 999;
+        transition: left 0.3s ease;
+        padding: 1.5rem 1rem;
+    }
+
+    .sidebar.open {
+        left: 0;
+    }
+
+    /* App container: single column */
+    .app-container {
+        flex-direction: column;
+        height: auto;
+        min-height: 100vh;
+    }
+
+    /* Main content takes full width */
+    .main-content {
+        padding: 1.2rem 1rem;
+        width: 100%;
+    }
+
+    /* Header stacks vertically */
+    .top-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .header-title h1 {
+        font-size: 1.4rem;
+    }
+
+    .header-actions {
+        flex-wrap: wrap;
+        width: 100%;
+        gap: 0.5rem;
+    }
+
+    .header-actions .btn {
+        flex: 1;
+        min-width: calc(50% - 0.5rem);
+        text-align: center;
+        font-size: 0.85rem;
+        padding: 0.6rem 0.8rem;
+    }
+
+    /* Stats: 1 column */
+    .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    /* Tables scroll horizontally */
+    .table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    table {
+        min-width: 500px;
+    }
+
+    th, td {
+        padding: 0.7rem 0.8rem;
+        font-size: 0.85rem;
+    }
+
+    /* Recent activity */
+    .recent-activity {
+        padding: 1rem;
+    }
+
+    .recent-activity h3 {
+        font-size: 1rem;
+    }
+
+    /* Teams */
+    .team-header {
+        flex-direction: column;
+        gap: 0.5rem;
+        align-items: flex-start;
+        padding: 0.8rem 1rem;
+    }
+
+    .player-row {
+        padding: 0.8rem 1rem;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .player-debt {
+        text-align: left;
+        flex-direction: row;
+        gap: 0.8rem;
+    }
+
+    .view-header-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.8rem;
+    }
+
+    /* Modals: full width */
+    .modal-content {
+        max-width: 95vw !important;
+        margin: 0.5rem;
+        padding: 1.5rem !important;
+    }
+
+    .player-detail-modal {
+        max-width: 98vw !important;
+        max-height: 95vh;
+        width: 98vw !important;
+    }
+
+    .player-detail-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .player-detail-history {
+        border-right: none;
+        border-bottom: 1px solid var(--glass-border);
+        max-height: 200px;
+    }
+
+    .player-detail-modal .modal-header {
+        padding: 1rem 1.2rem;
+    }
+
+    .debt-cards {
+        flex-direction: column;
+    }
+
+    /* Settings */
+    .settings-card {
+        padding: 1.2rem !important;
+    }
+
+    /* Login */
+    .login-card {
+        max-width: 90vw;
+        padding: 2rem 1.5rem;
+    }
+
+    /* Stat mini card (daily closure) */
+    .grid.grid-cols-2 {
+        display: flex !important;
+        flex-direction: column;
+        gap: 0.8rem !important;
+    }
+
+    /* Logo */
+    #app-logo {
+        width: 140px;
+    }
+
+    .logo-area {
+        margin-bottom: 2rem;
+    }
+
+    /* Current rate widget */
+    .current-rate-widget {
+        margin-top: 1rem;
+    }
+
+    .rate-value {
+        font-size: 1.2rem;
+    }
+
+    /* Body no longer flex for sidebar layout */
+    body {
+        display: block;
+    }
+}
+
+/* ===== RESPONSIVE: SMALL MOBILE (≤ 480px) ===== */
+@media (max-width: 480px) {
+    .main-content {
+        padding: 1rem 0.8rem;
+    }
+
+    .header-title h1 {
+        font-size: 1.2rem;
+    }
+
+    .header-title p {
+        font-size: 0.85rem;
+    }
+
+    .header-actions .btn {
+        min-width: 100%;
+        font-size: 0.8rem;
+    }
+
+    .stat-card {
+        padding: 1rem;
+    }
+
+    .stat-info h2 {
+        font-size: 1.3rem;
+    }
+
+    .stat-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1.2rem;
+    }
+
+    .modal-content {
+        padding: 1rem !important;
+        border-radius: 12px;
+    }
+
+    .modal-header h2 {
+        font-size: 1.1rem;
+    }
+
+    .player-detail-modal {
+        max-height: 98vh;
+    }
+
+    .player-detail-history {
+        max-height: 150px;
+        padding: 1rem;
+    }
+
+    .player-detail-form {
+        padding: 1rem;
+    }
+
+    .payment-registration-box {
+        padding: 0.8rem;
+    }
+
+    .login-card {
+        padding: 1.5rem 1.2rem;
+        border-radius: 14px;
+    }
+
+    .login-logo img {
+        width: 90px;
+        margin-bottom: 1.5rem;
+    }
+
+    .login-card h2 {
+        font-size: 1.2rem;
+    }
+
+    th, td {
+        padding: 0.5rem 0.6rem;
+        font-size: 0.8rem;
+    }
+
+    .badge {
+        font-size: 0.7rem;
+        padding: 0.15rem 0.4rem;
+    }
+}

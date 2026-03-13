@@ -42,8 +42,10 @@
     </div>
 
     <div class="app-container hidden">
+        <!-- Overlay para cerrar sidebar en móvil -->
+        <div class="sidebar-overlay" id="sidebar-overlay"></div>
         <!-- Sidebar / Navegación -->
-        <aside class="sidebar">
+        <aside class="sidebar" id="sidebar">
             <div class="logo-area">
                 <div class="logo-icon">
                     <img src="assets/logo.png" alt="De Laurentis Logo" id="app-logo">
@@ -78,9 +80,12 @@
         <!-- Contenido Principal -->
         <main class="main-content">
             <header class="top-header">
-                <div class="header-title">
-                    <h1 id="page-title">Panel Principal</h1>
-                    <p id="page-subtitle">Resumen general del torneo</p>
+                <div class="header-title" style="display: flex; align-items: center; gap: 0.8rem;">
+                    <button class="hamburger-btn" id="btn-hamburger" aria-label="Menú">☰</button>
+                    <div>
+                        <h1 id="page-title">Panel Principal</h1>
+                        <p id="page-subtitle">Resumen general del torneo</p>
+                    </div>
                 </div>
                 <div class="header-actions">
                     <button id="btn-update-rate" class="btn btn-outline">

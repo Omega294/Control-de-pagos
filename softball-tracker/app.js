@@ -92,6 +92,13 @@ function showLoading(show) {
     el('loading-overlay').classList.toggle('hidden', !show);
 }
 
+function closeMobileSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    if (sidebar) sidebar.classList.remove('open');
+    if (overlay) overlay.classList.remove('active');
+}
+
 function updateAuthUI() {
     try {
         const loginView = el('view-login');
@@ -365,8 +372,23 @@ function setupEventListeners() {
             view.classList.remove('hidden');
             if (nav.dataset.view === 'dashboard') renderDashboard();
             if (nav.dataset.view === 'teams') renderTeams();
+            // Close sidebar on mobile after navigation
+            closeMobileSidebar();
         });
     });
+
+    // Mobile sidebar toggle
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebar-overlay');
+
+    bind('btn-hamburger', 'click', () => {
+        sidebar.classList.toggle('open');
+        sidebarOverlay.classList.toggle('active');
+    });
+
+    if (sidebarOverlay) {
+        sidebarOverlay.addEventListener('click', closeMobileSidebar);
+    }
 
     // Delegated 
     const tList = el('teams-list');
