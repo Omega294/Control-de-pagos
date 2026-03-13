@@ -1,6 +1,14 @@
 // State Management
 const STATE_KEY = 'softball_tournament_data';
 
+async function hashPassword(plain) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(plain);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 const defaultState = {
     baseCostUSD: 100,
     currentRateEurBs: 45.0,
@@ -604,10 +612,12 @@ function setupEventListeners() {
     });
 }
 
-function handleLogin() {
+async function handleLogin() {
     const u = el('login-username').value;
     const p = el('login-password').value;
-    const user = appState.users.find(x => x.username === u && x.password === p);
+    const hash = await hashPassword(p);
+    // Soporta usuarios con passwordHash (nuevo) y password en texto plano (legacy)
+    const user = appState.users.find(x => x.username === u && (x.passwordHash === hash || (!x.passwordHash && x.password === p)));
     if (user) {
         appState.session = { username: user.username, role: user.role };
         saveData();
