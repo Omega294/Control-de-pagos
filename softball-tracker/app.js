@@ -77,21 +77,18 @@ async function initApp() {
     try {
         console.log("App starting...");
         loadData();
+        
+        // Ensure we try to sync users BEFORE allowing login
         await initSupabase();
-
         if (supabaseClient) {
             setCloudStatus('syncing');
             try {
-                const syncPromise = syncFromCloud();
-                const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Sync timeout")), 8000));
-                await Promise.race([syncPromise, timeoutPromise]);
+                await syncFromCloud();
                 setCloudStatus('online');
             } catch (e) {
-                console.warn("Sync skipped or failed:", e.message);
-                setCloudStatus('offline', 'Error de Sync');
+                console.warn("Initial sync failed:", e.message);
+                setCloudStatus('offline', 'Error Sync Inicial');
             }
-        } else {
-            setCloudStatus('offline', 'Sin Nube');
         }
 
         // Ensure default users and correct format
