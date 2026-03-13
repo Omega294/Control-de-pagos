@@ -174,7 +174,9 @@ function loadData() {
         const saved = localStorage.getItem(STATE_KEY);
         if (saved) {
             const parsed = JSON.parse(saved);
-            appState = { ...defaultState, ...parsed };
+            // Deep merge cloudConfig to prevent it from being overwritten by an empty object
+            const cloudConfig = { ...defaultState.cloudConfig, ...(parsed.cloudConfig || {}) };
+            appState = { ...defaultState, ...parsed, cloudConfig };
             // Extra safety for users array
             if (appState.users && !Array.isArray(appState.users)) {
                 appState.users = [appState.users];
@@ -429,8 +431,9 @@ function setupEventListeners() {
             if (nav.dataset.view === 'dashboard') renderDashboard();
             if (nav.dataset.view === 'teams') renderTeams();
             if (nav.dataset.view === 'settings') {
-                el('cloud-url').value = appState.cloudConfig?.url || '';
-                el('cloud-key').value = appState.cloudConfig?.key || '';
+                // Only overwrite if appState has a value, otherwise keep the HTML value
+                if (appState.cloudConfig?.url) el('cloud-url').value = appState.cloudConfig.url;
+                if (appState.cloudConfig?.key) el('cloud-key').value = appState.cloudConfig.key;
                 el('setting-base-cost').value = appState.baseCostUSD;
                 el('setting-markup').value = (appState.markupPercentage * 100).toFixed(0);
             }
