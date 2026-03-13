@@ -33,12 +33,32 @@ function initSupabase() {
     }
 }
 
+// Utility to update visual cloud status
+function setCloudStatus(status, message) {
+    const led = el('cloud-led');
+    const text = el('cloud-status-text');
+    
+    led.classList.remove('online', 'offline', 'syncing');
+    
+    if (status === 'syncing') {
+        led.classList.add('syncing');
+        text.textContent = message || 'Sincronizando...';
+    } else if (status === 'online') {
+        led.classList.add('online');
+        text.textContent = message || 'Conectado';
+    } else {
+        led.classList.add('offline');
+        text.textContent = message || 'Desconectado';
+    }
+}
+
 // Safe Element Helper
 const el = (id) => document.getElementById(id) || {
-    classList: { add: () => { }, remove: () => { }, toggle: () => { } },
+    classList: { add: () => { }, remove: () => { }, toggle: () => { }, contains: () => false },
     style: {},
     addEventListener: () => { },
-    dataset: {}
+    dataset: {},
+    textContent: ''
 };
 
 // Initialize App
@@ -48,21 +68,23 @@ async function initApp() {
         loadData();
         initSupabase();
 
-        // Safety timeout to ensure loading overlay ALWAYS disappears
-        setTimeout(() => showLoading(false), 3000);
-
         if (supabaseClient) {
+            setCloudStatus('syncing');
             try {
                 const syncPromise = syncFromCloud();
-                const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Sync timeout")), 4000));
+                const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Sync timeout")), 8000));
                 await Promise.race([syncPromise, timeoutPromise]);
+                setCloudStatus('online');
             } catch (e) {
                 console.warn("Sync skipped or failed:", e.message);
+                setCloudStatus('offline', 'Error de Sync');
             }
+        } else {
+            setCloudStatus('offline', 'Sin Nube');
         }
 
-        // Ensure default users
-        if (!appState.users || appState.users.length === 0) {
+        // Ensure default users and correct format
+        if (!appState.users || !Array.isArray(appState.users) || appState.users.length === 0) {
             appState.users = [{ username: 'admin', password: 'admin123', role: 'admin' }];
         }
 
@@ -80,7 +102,7 @@ async function initApp() {
         console.log("App ready.");
     } catch (e) {
         console.error("Critical Startup Error:", e);
-        // Emergency recovery attempt
+        setCloudStatus('offline', 'Error Crítico');
         updateAuthUI();
         renderApp();
     } finally {
@@ -142,6 +164,10 @@ function loadData() {
         if (saved) {
             const parsed = JSON.parse(saved);
             appState = { ...defaultState, ...parsed };
+            // Extra safety for users array
+            if (appState.users && !Array.isArray(appState.users)) {
+                appState.users = [appState.users];
+            }
         }
     } catch (e) {
         console.error("Error loading local data:", e);
@@ -174,27 +200,46 @@ async function syncFromCloud() {
             // Never restore session from cloud
             const cloudData = { ...data.payload };
             delete cloudData.session;
-            appState = { ...appState, ...cloudData };
+            
+            // Intelligent Merge: Don't let users become empty if local has them
+            if (cloudData.users && Array.isArray(cloudData.users) && cloudData.users.length > 0) {
+                appState.users = cloudData.users;
+            } else if (cloudData.users && !Array.isArray(cloudData.users)) {
+                // Fix if somehow it's an object
+                appState.users = [cloudData.users];
+            }
+            
+            // Merge other fields
+            appState = { ...appState, ...cloudData, users: appState.users };
             localStorage.setItem(STATE_KEY, JSON.stringify(appState));
         } else if (error && error.code === 'PGRST116') {
             await saveToCloud();
         }
     } catch (e) {
         console.error("Cloud sync error:", e);
+        throw e;
     }
 }
 
 async function saveToCloud() {
     if (!supabaseClient) return;
     try {
+        setCloudStatus('syncing');
         // Strip session before uploading — never persist login state to cloud
         const cloudPayload = { ...appState };
         delete cloudPayload.session;
-        await supabaseClient
+        
+        const { error } = await supabaseClient
             .from('tournament_data')
             .upsert({ id: 'default', payload: cloudPayload });
+            
+        if (error) throw error;
+        
+        console.log("Cloud save success");
+        setCloudStatus('online');
     } catch (e) {
         console.error("Cloud save error:", e);
+        setCloudStatus('offline', 'Fallo al Guardar');
     }
 }
 

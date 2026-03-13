@@ -235,6 +235,48 @@ body::after {
     color: var(--success);
 }
 
+.sync-status-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 1rem;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    padding: 0.5rem;
+    border-radius: 8px;
+    background: rgba(0,0,0,0.15);
+}
+
+.led-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #666;
+    box-shadow: 0 0 5px rgba(0,0,0,0.5);
+}
+
+.led-dot.online {
+    background: var(--success);
+    box-shadow: 0 0 8px var(--success);
+}
+
+.led-dot.offline {
+    background: var(--danger);
+    box-shadow: 0 0 8px var(--danger);
+}
+
+.led-dot.syncing {
+    background: var(--info);
+    box-shadow: 0 0 8px var(--info);
+    animation: pulse-sync 1s infinite alternate;
+}
+
+@keyframes pulse-sync {
+    from { opacity: 0.4; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1.1); }
+}
+
 /* Main Content */
 .main-content {
     flex: 1;
