@@ -180,7 +180,7 @@ function updateAuthUI() {
         if (appState.session) {
             loginView.classList.add('hidden');
             appContainer.classList.remove('hidden');
-            el('display-user-name').textContent = appState.session.username;
+            el('display-user-name').textContent = `Hola, ${appState.session.username}!`;
 
             const isAdmin = appState.session.role === 'admin';
             const actionIds = [
