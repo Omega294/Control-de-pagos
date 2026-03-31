@@ -786,6 +786,7 @@ function renderSearchResults(q) {
     const list = el('search-results-list');
     list.innerHTML = '';
     if (!q || q.length < 2) return;
+    
     appState.players.filter(p => p.name.toLowerCase().includes(q.toLowerCase()) || p.dni?.includes(q)).slice(0, 10).forEach(p => {
         const div = document.createElement('div');
         div.className = 'search-item';
@@ -796,6 +797,28 @@ function renderSearchResults(q) {
         div.onclick = () => openPlayerDetail(p.id);
         list.appendChild(div);
     });
+
+    const addBtn = document.createElement('div');
+    addBtn.className = 'btn btn-primary btn-sm mt-4';
+    addBtn.style.display = 'block';
+    addBtn.style.textAlign = 'center';
+    addBtn.innerHTML = `+ Registrar nuevo: "<strong>${q}</strong>" (Agente Libre / Sin Equipo)`;
+    addBtn.onclick = () => {
+        const pId = Date.now();
+        // Si "Sin Equipo" no existe en los equipos, el jugador igual puede tenerlo
+        if (!appState.teams.includes('Sin Equipo')) appState.teams.push('Sin Equipo');
+        
+        appState.players.push({
+            id: pId,
+            name: q.charAt(0).toUpperCase() + q.slice(1),
+            dni: '',
+            team: 'Sin Equipo'
+        });
+        saveData();
+        renderApp();
+        openPlayerDetail(pId);
+    };
+    list.appendChild(addBtn);
 }
 
 function handleTeamAction(team) {
