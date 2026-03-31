@@ -30,7 +30,8 @@ const defaultState = {
         url: 'https://ivpwdljlczqszfhheexy.supabase.co',
         key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml2cHdkbGpsY3pxc3pmaGhlZXh5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNDc1MjgsImV4cCI6MjA4ODgyMzUyOH0.YtOPAjOYtZ3vJ4q-N3X9UFuiEV3neqgPyuTwS2GPU-Q',
         enabled: true
-    }
+    },
+    deletedPayments: []
 };
 
 let supabaseClient = null;
@@ -372,18 +373,33 @@ function renderDashboard() {
 
         const tbody = el('recent-payments-list');
         tbody.innerHTML = '';
-        const recent = [...appState.payments].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10);
+        const allActivities = [...appState.payments];
+        if (appState.deletedPayments) {
+            allActivities.push(...appState.deletedPayments.map(dp => ({ ...dp, isDeleted: true })));
+        }
+
+        const recent = allActivities.sort((a, b) => new Date(b.deletedAt || b.date) - new Date(a.deletedAt || a.date)).slice(0, 15);
 
         recent.forEach(pay => {
             const player = appState.players.find(p => p.id === pay.playerId) || { name: '?', team: '-' };
             const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${new Date(pay.date).toLocaleDateString()}</td>
-                <td><strong>${player.name}</strong></td>
-                <td>${player.team}</td>
-                <td><span class="badge badge-${pay.currency.toLowerCase()}">${pay.amount.toFixed(2)} ${pay.currency}</span></td>
-                <td class="amount-usd">$${pay.equivalentUsd.toFixed(2)}</td>
-            `;
+            if (pay.isDeleted) {
+                tr.innerHTML = `
+                    <td><s style="color:var(--danger)">${new Date(pay.deletedAt).toLocaleDateString()}</s></td>
+                    <td><s style="color:var(--danger)">${player.name}</s><br><small style="color:var(--danger)">Eliminado por: ${pay.deletedBy} (${pay.deleteReason})</small></td>
+                    <td><s style="color:var(--danger)">${player.team}</s></td>
+                    <td><span class="badge" style="background:var(--danger)">Anulado</span></td>
+                    <td class="amount-usd"><s style="color:var(--danger)">$${pay.equivalentUsd.toFixed(2)}</s></td>
+                `;
+            } else {
+                tr.innerHTML = `
+                    <td>${new Date(pay.date).toLocaleDateString()}</td>
+                    <td><strong>${player.name}</strong></td>
+                    <td>${player.team}</td>
+                    <td><span class="badge badge-${pay.currency.toLowerCase()}">${pay.amount.toFixed(2)} ${pay.currency}</span></td>
+                    <td class="amount-usd">$${pay.equivalentUsd.toFixed(2)}</td>
+                `;
+            }
             tbody.appendChild(tr);
         });
     } catch (e) {
@@ -655,6 +671,57 @@ function setupEventListeners() {
         }
     });
 
+    let pendingDeletePaymentId = null;
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('action-delete-payment')) {
+            pendingDeletePaymentId = parseFloat(e.target.dataset.id);
+            el('confirm-auth-password').value = '';
+            el('confirm-auth-error').classList.add('hidden');
+            el('modal-confirm-auth').classList.remove('hidden');
+        }
+    });
+
+    bind('btn-submit-confirm-auth', 'click', async () => {
+        if (!pendingDeletePaymentId) return;
+        const p = el('confirm-auth-password').value;
+        const hash = await hashPassword(p);
+        const user = appState.users.find(x => x.username === appState.session?.username);
+        
+        if (!user) {
+            alert("Error: Sesión no válida.");
+            return;
+        }
+
+        const isCorrect = (user.passwordHash && hash === user.passwordHash) || (!user.passwordHash && user.password === p);
+        
+        if (isCorrect) {
+            el('modal-confirm-auth').classList.add('hidden');
+            const reason = prompt("Describe el motivo por el cual estás eliminando/anulando este pago:");
+            if (reason && reason.trim()) {
+                const paymentIndex = appState.payments.findIndex(pay => pay.id === pendingDeletePaymentId);
+                if (paymentIndex !== -1) {
+                    const removed = appState.payments.splice(paymentIndex, 1)[0];
+                    if (!appState.deletedPayments) appState.deletedPayments = [];
+                    appState.deletedPayments.push({
+                        ...removed,
+                        deletedBy: appState.session.username,
+                        deletedAt: new Date().toISOString(),
+                        deleteReason: reason.trim()
+                    });
+                    saveData();
+                    renderApp();
+                    openPlayerDetail(removed.playerId);
+                    alert("Pago anulado exitosamente.");
+                }
+            } else {
+                alert("Operación cancelada. El motivo es obligatorio para el historial.");
+            }
+            pendingDeletePaymentId = null;
+        } else {
+            el('confirm-auth-error').classList.remove('hidden');
+        }
+    });
+
     bind('btn-reset-data', 'click', () => {
         if (confirm("⚠️ ¿Estás completamente seguro de que quieres restaurar los datos de fábrica? Esto borrará todos los pagos, jugadores, y equipos. ¡Esta acción no se puede deshacer!")) {
             const preservedCloud = { ...appState.cloudConfig };
@@ -775,7 +842,8 @@ function openPlayerDetail(pId) {
     hist.innerHTML = '';
     appState.payments.filter(x => x.playerId === pId).forEach(pay => {
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${new Date(pay.date).toLocaleDateString()}</td><td>${pay.amount} ${pay.currency}</td><td>$${pay.equivalentUsd.toFixed(2)}</td><td></td>`;
+        tr.innerHTML = `<td>${new Date(pay.date).toLocaleDateString()}</td><td>${pay.amount} ${pay.currency}</td><td>$${pay.equivalentUsd.toFixed(2)}</td>
+        <td><button class="btn btn-sm btn-danger action-delete-payment" data-id="${pay.id}" style="padding: 2px 8px; font-size:12px;">X</button></td>`;
         hist.appendChild(tr);
     });
     el('modal-player-detail').classList.remove('hidden');
