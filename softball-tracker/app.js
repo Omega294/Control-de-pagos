@@ -293,6 +293,9 @@ async function saveToCloud() {
     } catch (e) {
         console.error("Cloud save error:", e);
         setCloudStatus('offline', 'Fallo al Guardar');
+        if (e.message) {
+            alert("Error al guardar en la nube (lee esto o mándame captura): " + (e.message || JSON.stringify(e)));
+        }
     }
 }
 
