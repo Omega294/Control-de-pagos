@@ -662,12 +662,13 @@ function setupEventListeners() {
 }
 
 async function handleLogin() {
-    const u = el('login-username').value;
+    const rawU = el('login-username').value;
+    const u = rawU.trim().toLowerCase();
     const p = el('login-password').value;
     const hash = await hashPassword(p);
     // Soporta: hash SHA-256 (HTTPS), texto plano legacy, y fallback cuando crypto no está disponible (file://)
     const user = appState.users.find(x => {
-        if (x.username !== u) return false;
+        if (x.username.toLowerCase() !== u) return false;
         if (x.passwordHash && hash) return x.passwordHash === hash; // usuario con hash
         return x.password === p; // usuario legacy con texto plano
     });
