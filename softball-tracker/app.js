@@ -659,6 +659,31 @@ function setupEventListeners() {
             el('modal-add-user').classList.add('hidden');
         }
     });
+
+    bind('btn-reset-data', 'click', () => {
+        if (confirm("⚠️ ¿Estás completamente seguro de que quieres restaurar los datos de fábrica? Esto borrará todos los pagos, jugadores, y equipos. ¡Esta acción no se puede deshacer!")) {
+            const preservedCloud = { ...appState.cloudConfig };
+            appState = { ...JSON.parse(JSON.stringify(defaultState)), cloudConfig: preservedCloud };
+            saveData();
+            location.reload();
+        }
+    });
+
+    bind('btn-empty-data', 'click', () => {
+        if (confirm("⚠️ ¿Vaciar la base de datos? Esto eliminará a TODOS los jugadores y TODOS los pagos registrados. Mantendrá tus configuraciones y usuarios. ¡No se puede deshacer!")) {
+            appState.players = [];
+            appState.payments = [];
+            saveData();
+            renderApp();
+            alert("Base de datos vaciada.");
+            
+            // Si la aplicación se recarga y los jugadores están vacíos, autogenerará datos de prueba.
+            // Le avisamos al usuario por si no lo sabe.
+            if (appState.players.length === 0) {
+                console.log("Los jugadores han sido limpiados.");
+            }
+        }
+    });
 }
 
 async function handleLogin() {
