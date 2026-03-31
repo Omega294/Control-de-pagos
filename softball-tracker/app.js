@@ -138,12 +138,7 @@ async function initApp() {
             appState.users = [{ username: 'admin', password: 'admin123', role: 'admin' }];
         }
 
-        // Initial dummy data if empty — only save locally, NEVER push to cloud during init
-        // (pushing here would overwrite cloud data with an empty/default local state)
-        if (appState.players.length === 0) {
-            generateDummyData();
-            localStorage.setItem(STATE_KEY, JSON.stringify({ ...appState, session: undefined }));
-        }
+        // Ya no generamos datos falsos automáticamente para permitir bases de datos vacías en producción.
 
         setupEventListeners();
         // Always require login on page load — never restore a persisted session
