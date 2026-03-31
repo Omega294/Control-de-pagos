@@ -671,12 +671,36 @@ function setupEventListeners() {
             saveData();
             renderApp();
             alert("Base de datos vaciada.");
-            
-            // Si la aplicación se recarga y los jugadores están vacíos, autogenerará datos de prueba.
-            // Le avisamos al usuario por si no lo sabe.
-            if (appState.players.length === 0) {
-                console.log("Los jugadores han sido limpiados.");
-            }
+        }
+    });
+
+    bind('btn-add-team', 'click', () => {
+        el('add-team-input').value = '';
+        el('modal-add-team').classList.remove('hidden');
+    });
+
+    bind('btn-submit-add-team', 'click', () => {
+        const teamName = el('add-team-input').value.trim();
+        if (teamName && !appState.teams.includes(teamName)) {
+            appState.teams.push(teamName);
+            saveData();
+            renderApp();
+            el('modal-add-team').classList.add('hidden');
+        } else if (appState.teams.includes(teamName)) {
+            alert("Ese equipo ya existe.");
+        }
+    });
+
+    bind('btn-submit-edit-team', 'click', () => {
+        const oldName = el('edit-team-old-name').value;
+        const newName = el('edit-team-input').value.trim();
+        if (newName && newName !== oldName && !appState.teams.includes(newName)) {
+            window.renameTeam(oldName, newName);
+            el('modal-edit-team').classList.add('hidden');
+        } else if (appState.teams.includes(newName) && newName !== oldName) {
+            alert("Ya existe un equipo con ese nombre.");
+        } else {
+            el('modal-edit-team').classList.add('hidden');
         }
     });
 }
@@ -775,8 +799,9 @@ function renderSearchResults(q) {
 }
 
 function handleTeamAction(team) {
-    const action = prompt("1. Pagar todo\n2. Renombrar\nAcción:");
+    const action = prompt("1. Pagar todo\n2. Renombrar\n3. Eliminar equipo\nAcción (ingrese 1, 2 o 3):");
     if (action === '1') {
+        if (!confirm(`¿Seguro que quieres registrar pagos para saldar la deuda de TODOS los jugadores de ${team}?`)) return;
         appState.players.filter(p => p.team === team).forEach(p => {
             const d = getPlayerDebts(p.id);
             if (d.remainingUsd > 0) {
@@ -787,9 +812,40 @@ function handleTeamAction(team) {
                 });
             }
         });
-        saveData(); renderApp();
+        saveData(); 
+        renderApp();
+        alert("✔️ Se han registrado los pagos correspondientes a este equipo.");
+    } else if (action === '2') {
+        const modal = document.getElementById('modal-edit-team');
+        if (modal) {
+            document.getElementById('edit-team-old-name').value = team;
+            document.getElementById('edit-team-input').value = team;
+            modal.classList.remove('hidden');
+        } else {
+            // Fallback si no hay modal
+            const newName = prompt(`Nuevo nombre para ${team}:`, team);
+            if (newName && newName.trim() !== '') renameTeam(team, newName.trim());
+        }
+    } else if (action === '3') {
+        if (confirm(`⚠️ ¿Estás completamente seguro de que quieres eliminar el equipo "${team}"? (Los jugadores no se borrarán, solo quedarán sin equipo asignado).`)) {
+            appState.teams = appState.teams.filter(t => t !== team);
+            appState.players.forEach(p => { if (p.team === team) p.team = "Sin Equipo"; });
+            saveData();
+            renderApp();
+            alert("Equipo eliminado.");
+        }
     }
 }
+
+// Función auxiliar
+window.renameTeam = function(oldName, newName) {
+    if (oldName === newName) return;
+    const index = appState.teams.indexOf(oldName);
+    if (index !== -1) appState.teams[index] = newName;
+    appState.players.forEach(p => { if (p.team === oldName) p.team = newName; });
+    saveData();
+    renderApp();
+};
 
 // Global Start
 document.addEventListener('DOMContentLoaded', initApp);
