@@ -16,8 +16,8 @@ async function hashPassword(plain) {
 }
 
 const defaultState = {
-    baseCostUSD: 55,
-    baseCostBS_USD: 70,
+    baseCostUSD: 70, // Meta total en valor nominal (precio BS)
+    baseCostCashUSD: 55, // Precio real si se paga en divisas
     currentRateEurBs: 45.0,
     markupPercentage: 0.00,
     teams: ['Los Tigres', 'Bravos', 'Cardenales', 'Águilas', 'Leones'],
@@ -316,41 +316,42 @@ function generateDummyData() {
 function getPlayerDebts(playerId) {
     const playerPayments = appState.payments.filter(p => p.playerId === playerId);
     
-    // Calculamos el progreso proporcional (0 a 1)
-    let progress = 0;
-    let totalCreditUsd = 0; // Crédito total relativo al precio de $55
+    let totalCredit = 0; // Crédito acumulado hacia la meta de $70
 
     playerPayments.forEach(p => {
         if (p.currency === 'USD') {
-            const pProgress = p.amount / appState.baseCostUSD;
-            progress += pProgress;
-            totalCreditUsd += p.amount;
+            // Cada $1 en divisas vale más (70/55) para llegar a la meta de $70
+            const multiplier = appState.baseCostUSD / appState.baseCostCashUSD;
+            totalCredit += (p.amount * multiplier);
         } else if (p.currency === 'BS') {
+            // Los bolívares cuentan por su valor nominal (Monto / Tasa)
             const nominalUsd = p.amount / (p.rateEurBs || appState.currentRateEurBs);
-            const pProgress = nominalUsd / appState.baseCostBS_USD;
-            progress += pProgress;
-            // El crédito en USD es el porcentaje pagado aplicado al costo base de $55
-            totalCreditUsd += (pProgress * appState.baseCostUSD);
+            totalCredit += nominalUsd;
         }
     });
 
-    const remainingPercent = Math.max(0, 1 - progress);
-    const remainingUsd = remainingPercent * appState.baseCostUSD;
-    const remainingBs = remainingPercent * appState.baseCostBS_USD * appState.currentRateEurBs;
+    const remainingValue = Math.max(0, appState.baseCostUSD - totalCredit);
+    
+    // Deuda en BS: Basada en la meta de $70
+    const remainingBs = remainingValue * appState.currentRateEurBs;
+    
+    // Deuda en Divisas: Basada en la proporción del precio de $55
+    const remainingUsd = (remainingValue / appState.baseCostUSD) * appState.baseCostCashUSD;
 
     return {
         remainingUsd: parseFloat(remainingUsd.toFixed(2)),
         remainingBs: parseFloat(remainingBs.toFixed(2)),
-        paidUsd: parseFloat(totalCreditUsd.toFixed(2))
+        paidUsd: parseFloat(totalCredit.toFixed(2)) // Mostramos crédito acumulado nominal
     };
 }
 
 function calcEquivalentUsd(amount, currency, rateEurBs) {
-    if (currency === 'USD') return amount;
+    if (currency === 'USD') {
+        const multiplier = appState.baseCostUSD / appState.baseCostCashUSD;
+        return amount * multiplier;
+    }
     if (currency === 'BS') {
-        const nominalUsd = amount / rateEurBs;
-        const pProgress = nominalUsd / appState.baseCostBS_USD;
-        return pProgress * appState.baseCostUSD;
+        return amount / rateEurBs;
     }
     return 0;
 }
@@ -360,9 +361,9 @@ function renderApp() {
     try {
         el('sidebar-rate').textContent = (appState.currentRateEurBs || 0).toFixed(2) + ' Bs';
         const costInput = document.getElementById('setting-base-cost');
-        if (costInput) costInput.value = appState.baseCostUSD;
+        if (costInput) costInput.value = appState.baseCostCashUSD;
         const costBSInput = document.getElementById('setting-base-cost-bs');
-        if (costBSInput) costBSInput.value = appState.baseCostBS_USD;
+        if (costBSInput) costBSInput.value = appState.baseCostUSD;
         const markupInput = document.getElementById('setting-markup');
         if (markupInput) markupInput.value = (appState.markupPercentage || 0) * 100;
 
@@ -505,8 +506,8 @@ function setupEventListeners() {
                 // Only overwrite if appState has a value, otherwise keep the HTML value
                 if (appState.cloudConfig?.url) el('cloud-url').value = appState.cloudConfig.url;
                 if (appState.cloudConfig?.key) el('cloud-key').value = appState.cloudConfig.key;
-                el('setting-base-cost').value = appState.baseCostUSD;
-                el('setting-base-cost-bs').value = appState.baseCostBS_USD;
+                el('setting-base-cost').value = appState.baseCostCashUSD;
+                el('setting-base-cost-bs').value = appState.baseCostUSD;
                 el('setting-markup').value = (appState.markupPercentage * 100).toFixed(0);
             }
             // Close sidebar on mobile after navigation
@@ -630,8 +631,8 @@ function setupEventListeners() {
     });
 
     bind('btn-save-settings', 'click', () => {
-        appState.baseCostUSD = parseFloat(el('setting-base-cost').value);
-        appState.baseCostBS_USD = parseFloat(el('setting-base-cost-bs').value);
+        appState.baseCostCashUSD = parseFloat(el('setting-base-cost').value);
+        appState.baseCostUSD = parseFloat(el('setting-base-cost-bs').value);
         appState.markupPercentage = parseFloat(el('setting-markup').value) / 100;
         saveData();
         renderApp();
