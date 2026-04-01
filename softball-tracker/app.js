@@ -19,6 +19,7 @@ const defaultState = {
     baseCostUSD: 70, // Meta total en valor nominal (precio BS)
     baseCostCashUSD: 55, // Precio real si se paga en divisas
     currentRateEurBs: 45.0,
+    rateLastUpdated: new Date().toISOString(),
     markupPercentage: 0.00,
     teams: ['Los Tigres', 'Bravos', 'Cardenales', 'Águilas', 'Leones'],
     players: [],
@@ -556,6 +557,7 @@ function setupEventListeners() {
         const val = parseFloat(el('update-rate-input').value);
         if (val > 0) {
             appState.currentRateEurBs = val;
+            appState.rateLastUpdated = new Date().toISOString();
             saveData();
             renderApp();
             el('modal-rate').classList.add('hidden');
@@ -870,6 +872,17 @@ function openPlayerDetail(pId) {
         <td><button class="btn btn-sm btn-danger action-delete-payment" data-id="${pay.id}" style="padding: 2px 8px; font-size:12px;">X</button></td>`;
         hist.appendChild(tr);
     });
+
+    // Actualizar info de la tasa fija en el modal
+    el('detail-pay-rate').value = appState.currentRateEurBs;
+    el('detail-pay-rate').readOnly = true;
+    
+    if (appState.rateLastUpdated) {
+        const date = new Date(appState.rateLastUpdated);
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+        el('detail-rate-info').textContent = `Tasa fijada el: ${date.toLocaleDateString('es-ES', options)}`;
+    }
+
     el('modal-player-detail').classList.remove('hidden');
     el('modal-search-player').classList.add('hidden');
 }

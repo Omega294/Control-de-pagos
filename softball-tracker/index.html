@@ -407,7 +407,8 @@
                         </div>
                         <div class="form-group hidden" id="detail-pay-rate-group">
                             <label>Tasa de Cambio (BS/$)</label>
-                            <input type="number" id="detail-pay-rate" class="form-input" step="0.01">
+                            <input type="number" id="detail-pay-rate" class="form-input" step="0.01" readonly style="background: rgba(255,255,255,0.05); color: var(--text-secondary);">
+                            <small id="detail-rate-info" style="color: var(--info); font-size: 0.75rem; margin-top: 2px;"></small>
                         </div>
                         <div class="preview-box">
                             Equivalente: <strong id="detail-pay-preview-usd">$0.00 USD</strong>
@@ -568,7 +569,7 @@
         </div>
     </div>
 
-    <script src="app.js?v=12"></script>
+    <script src="app.js?v=13"></script>
 </body>
 
 </html>
