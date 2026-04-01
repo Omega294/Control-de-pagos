@@ -553,6 +553,15 @@ function setupEventListeners() {
         el('modal-rate').classList.remove('hidden');
     });
 
+    bind('btn-daily-closure', 'click', () => {
+        const today = new Date().toISOString().split('T')[0];
+        el('closure-date-input').value = today;
+        renderDailyClosure();
+        el('modal-daily-closure').classList.remove('hidden');
+    });
+
+    el('closure-date-input').addEventListener('change', renderDailyClosure);
+
     bind('btn-submit-rate', 'click', () => {
         const val = parseFloat(el('update-rate-input').value);
         if (val > 0) {
@@ -909,6 +918,33 @@ function openPlayerDetail(pId) {
 
     el('modal-player-detail').classList.remove('hidden');
     el('modal-search-player').classList.add('hidden');
+}
+
+function renderDailyClosure() {
+    const selDate = el('closure-date-input').value;
+    if (!selDate) return;
+
+    const dailyPayments = appState.payments.filter(p => {
+        const pDate = new Date(p.date).toISOString().split('T')[0];
+        return pDate === selDate;
+    });
+
+    let totalUsd = 0;
+    let totalBs = 0;
+    let totalEquivalent = 0;
+
+    dailyPayments.forEach(p => {
+        if (p.currency === 'USD') {
+            totalUsd += p.amount;
+        } else if (p.currency === 'BS') {
+            totalBs += p.amount;
+        }
+        totalEquivalent += (p.equivalentUsd || 0);
+    });
+
+    el('closure-total-usd').textContent = `$${totalUsd.toFixed(2)}`;
+    el('closure-total-bs').textContent = `${totalBs.toFixed(2)} Bs`;
+    el('closure-total-equivalent').textContent = `$${totalEquivalent.toFixed(2)}`;
 }
 
 function renderSearchResults(q) {
