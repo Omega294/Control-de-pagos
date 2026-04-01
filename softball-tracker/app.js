@@ -583,9 +583,22 @@ function setupEventListeners() {
     };
     detAmt.addEventListener('input', updatePrev);
     detCur.addEventListener('change', () => {
-        el('detail-pay-rate-group').classList.toggle('hidden', detCur.value !== 'BS');
+        const isBS = detCur.value === 'BS';
+        el('detail-pay-rate-group').classList.toggle('hidden', !isBS);
+        el('detail-pay-calc-group').classList.toggle('hidden', !isBS);
         updatePrev();
     });
+    
+    // Nueva lógica de calculadora interactiva
+    el('detail-pay-usd-helper').addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value) || 0;
+        const rate = parseFloat(el('detail-pay-rate').value) || 0;
+        if (val > 0 && rate > 0) {
+            el('detail-pay-amount').value = (val * rate).toFixed(2);
+            updatePrev();
+        }
+    });
+
     detRat.addEventListener('input', updatePrev);
 
     bind('btn-submit-detail-payment', 'click', () => {
@@ -851,6 +864,12 @@ function openPlayerDetail(pId) {
     el('detail-title').textContent = p.name;
     el('detail-edit-name').value = p.name;
     el('detail-edit-dni').value = p.dni || '';
+
+    el('detail-pay-amount').value = '';
+    el('detail-pay-usd-helper').value = '';
+    el('detail-pay-currency').value = 'USD';
+    el('detail-pay-rate-group').classList.add('hidden');
+    el('detail-pay-calc-group').classList.add('hidden');
 
     const teamSel = el('detail-edit-team');
     teamSel.innerHTML = '';
