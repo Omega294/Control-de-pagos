@@ -7,6 +7,10 @@
     <title>Torneo De Laurentis - Control de Pagos</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <!-- Librerías para Exportación -->
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     <!-- Supabase SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -476,6 +480,28 @@
                     <p style="color: var(--text-secondary); margin-bottom: 0.5rem;">Total Equivalente en USD</p>
                     <h2 id="closure-total-equivalent" style="font-size: 2.5rem; color: var(--success);">$0.00</h2>
                 </div>
+
+                <div class="mt-6">
+                    <h3 class="mb-4">Desglose de la jornada</h3>
+                    <div style="max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.2); border-radius: 8px;">
+                        <table class="table" style="font-size: 0.85rem;">
+                            <thead>
+                                <tr>
+                                    <th>Jugador</th>
+                                    <th>Monto</th>
+                                    <th>Equiv. $</th>
+                                </tr>
+                            </thead>
+                            <tbody id="closure-payments-list"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="flex-wrap: wrap; gap: 8px; justify-content: center;">
+                <button id="btn-export-excel" class="btn btn-success btn-sm">📊 Excel</button>
+                <button id="btn-export-csv" class="btn btn-outline btn-sm">📋 CSV</button>
+                <button id="btn-export-pdf" class="btn btn-danger btn-sm">PDF</button>
+                <button class="btn btn-outline btn-sm close-modal" style="width: 100%; margin-top: 8px;">Cerrar</button>
             </div>
         </div>
     </div>
@@ -573,7 +599,7 @@
         </div>
     </div>
 
-    <script src="app.js?v=15"></script>
+    <script src="app.js?v=16"></script>
 </body>
 
 </html>

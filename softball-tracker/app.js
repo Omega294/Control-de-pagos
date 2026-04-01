@@ -562,6 +562,10 @@ function setupEventListeners() {
 
     el('closure-date-input').addEventListener('change', renderDailyClosure);
 
+    bind('btn-export-excel', 'click', () => exportClosure('xlsx'));
+    bind('btn-export-csv', 'click', () => exportClosure('csv'));
+    bind('btn-export-pdf', 'click', () => exportClosure('pdf'));
+
     bind('btn-submit-rate', 'click', () => {
         const val = parseFloat(el('update-rate-input').value);
         if (val > 0) {
@@ -933,6 +937,9 @@ function renderDailyClosure() {
     let totalBs = 0;
     let totalEquivalent = 0;
 
+    const list = el('closure-payments-list');
+    list.innerHTML = '';
+
     dailyPayments.forEach(p => {
         if (p.currency === 'USD') {
             totalUsd += p.amount;
@@ -940,11 +947,85 @@ function renderDailyClosure() {
             totalBs += p.amount;
         }
         totalEquivalent += (p.equivalentUsd || 0);
+
+        const player = appState.players.find(x => x.id === p.playerId);
+        const name = player ? player.name : 'Desconocido';
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${name}</td><td>${p.amount} ${p.currency}</td><td>$${p.equivalentUsd.toFixed(2)}</td>`;
+        list.appendChild(tr);
     });
 
     el('closure-total-usd').textContent = `$${totalUsd.toFixed(2)}`;
     el('closure-total-bs').textContent = `${totalBs.toFixed(2)} Bs`;
     el('closure-total-equivalent').textContent = `$${totalEquivalent.toFixed(2)}`;
+}
+
+function exportClosure(format) {
+    const selDate = el('closure-date-input').value;
+    const dailyPayments = appState.payments.filter(p => {
+        const pDate = new Date(p.date).toISOString().split('T')[0];
+        return pDate === selDate;
+    });
+
+    if (dailyPayments.length === 0) {
+        alert("No hay pagos registrados en esta fecha para exportar.");
+        return;
+    }
+
+    const data = dailyPayments.map(p => {
+        const player = appState.players.find(x => x.id === p.playerId);
+        return {
+            "FECHA": new Date(p.date).toLocaleDateString(),
+            "JUGADOR": player ? player.name : 'N/A',
+            "MONTO": p.amount,
+            "MONEDA": p.currency,
+            "TASA": p.currency === 'BS' ? p.rateEurBs : '-',
+            "EQUIV_USD": p.equivalentUsd.toFixed(2)
+        };
+    });
+
+    const fileName = `cierre_${selDate}`;
+
+    if (format === 'csv' || format === 'xlsx') {
+        const ws = XLSX.utils.json_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Cierre");
+        if (format === 'xlsx') {
+            XLSX.writeFile(wb, `${fileName}.xlsx`);
+        } else {
+            XLSX.writeFile(wb, `${fileName}.csv`, { bookType: 'csv' });
+        }
+    } else if (format === 'pdf') {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        doc.setFontSize(18);
+        doc.text(`Cierre Diario: ${selDate}`, 14, 20);
+        
+        doc.setFontSize(10);
+        const totals = [
+            [`Efectivo USD: $${el('closure-total-usd').textContent.replace('$', '')}`],
+            [`Bolívares: ${el('closure-total-bs').textContent}`],
+            [`Total Equivalente: ${el('closure-total-equivalent').textContent}`]
+        ];
+        
+        doc.text("Resumen de Caja:", 14, 30);
+        let y = 35;
+        totals.forEach((t, i) => {
+            doc.text(t[0], 14, y + (i * 5));
+        });
+
+        const tableBody = data.map(d => [d.JUGADOR, `${d.MONTO} ${d.MONEDA}`, `$${d.EQUIV_USD}`]);
+        
+        doc.autoTable({
+            startY: 55,
+            head: [['Jugador', 'Monto Original', 'Crédito USD']],
+            body: tableBody,
+            theme: 'grid'
+        });
+        
+        doc.save(`${fileName}.pdf`);
+    }
 }
 
 function renderSearchResults(q) {
