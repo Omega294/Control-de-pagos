@@ -570,9 +570,10 @@ function setupEventListeners() {
         el('modal-search-player').classList.remove('hidden');
     });
 
-    el('search-player-input').addEventListener('input', (e) => renderSearchResults(e.target.value));
-
-    // Detail Preview
+    el('search-player-input').addEventListener('input', (e) => {
+        e.target.value = e.target.value.toUpperCase();
+        renderSearchResults(e.target.value);
+    });  // Detail Preview
     const detAmt = el('detail-pay-amount');
     const detCur = el('detail-pay-currency');
     const detRat = el('detail-pay-rate');
@@ -625,7 +626,7 @@ function setupEventListeners() {
         const pId = parseInt(el('search-player-input').dataset.selectedId);
         const player = appState.players.find(p => p.id === pId);
         if (player) {
-            player.name = el('detail-edit-name').value;
+            player.name = el('detail-edit-name').value.toUpperCase();
             player.dni = el('detail-edit-dni').value;
             player.team = el('detail-edit-team').value;
             saveData();
@@ -780,21 +781,25 @@ function setupEventListeners() {
         }
     });
 
-    bind('btn-add-team', 'click', () => {
+bind('btn-add-team', 'click', () => {
         el('add-team-input').value = '';
         el('modal-add-team').classList.remove('hidden');
     });
 
     bind('btn-submit-add-team', 'click', () => {
-        const teamName = el('add-team-input').value.trim();
+        const teamName = el('add-team-input').value.trim().toUpperCase();
         if (teamName && !appState.teams.includes(teamName)) {
             appState.teams.push(teamName);
             saveData();
             renderApp();
-            el('modal-add-team').classList.add('hidden');
+            el('modal-add-team').classList.remove('hidden');
         } else if (appState.teams.includes(teamName)) {
             alert("Ese equipo ya existe.");
         }
+    });
+
+    el('add-team-input').addEventListener('input', (e) => {
+        e.target.value = e.target.value.toUpperCase();
     });
 
     bind('btn-submit-edit-team', 'click', () => {
@@ -934,7 +939,7 @@ function renderSearchResults(q) {
         
         appState.players.push({
             id: pId,
-            name: q.charAt(0).toUpperCase() + q.slice(1),
+            name: q.toUpperCase(),
             dni: '',
             team: 'Sin Equipo'
         });
