@@ -69,7 +69,7 @@
                 </a>
             </nav>
             <div class="current-rate-widget">
-                <p>Tasa EUR/BS Hoy</p>
+                <p>Tasa de Cambio (BS/$)</p>
                 <div class="rate-value" id="sidebar-rate">45.00</div>
                 <div class="sync-status-indicator">
                     <div id="cloud-led" class="led-dot"></div>
@@ -171,15 +171,21 @@
                     <h3>Configuración Global</h3>
 
                     <div class="form-group mt-4">
-                        <label for="setting-base-cost">Costo Base del Torneo (USD)</label>
-                        <input type="number" id="setting-base-cost" class="form-input" value="100" step="0.01">
-                        <small>El costo total en dólares que debe pagar cada jugador.</small>
+                        <label for="setting-base-cost">Costo del Torneo en Divisas (USD)</label>
+                        <input type="number" id="setting-base-cost" class="form-input" value="55" step="0.01">
+                        <small>Precio base si el jugador cancela en dólares o divisas.</small>
+                    </div>
+
+                    <div class="form-group mt-4">
+                        <label for="setting-base-cost-bs">Costo del Torneo en BS (Valor Nominal $)</label>
+                        <input type="number" id="setting-base-cost-bs" class="form-input" value="70" step="0.01">
+                        <small>Precio base si el jugador cancela en bolívares (se usará este monto $ para el cálculo en BS).</small>
                     </div>
 
                     <div class="form-group">
-                        <label for="setting-markup">Recargo BS a EUR (%)</label>
-                        <input type="number" id="setting-markup" class="form-input" value="30">
-                        <small>Porcentaje que se suma para convertir la deuda a Euros antes de pasar a BS.</small>
+                        <label for="setting-markup">Porcentaje de Recargo (%)</label>
+                        <input type="number" id="setting-markup" class="form-input" value="0">
+                        <small>Porcentaje que se suma para cubrir riesgos de cambio. Al estar en 0, la conversión es directa (Monto / Tasa).</small>
                     </div>
 
                     <div class="form-actions mt-6">
@@ -376,11 +382,11 @@
 
                     <div class="debt-cards mt-6">
                         <div class="stat-card glass debt-item">
-                            <span>Deuda Pendiente (USD)</span>
+                            <span>Si paga en Divisas (USD)</span>
                             <h2 id="detail-debt-usd" class="text-danger">$0.00</h2>
                         </div>
                         <div class="stat-card glass debt-item">
-                            <span>Deuda Pendiente (BS)</span>
+                            <span>Si paga en Bolívares (BS)</span>
                             <h2 id="detail-debt-bs">0.00 Bs</h2>
                         </div>
                     </div>
@@ -400,7 +406,7 @@
                                 step="0.01">
                         </div>
                         <div class="form-group hidden" id="detail-pay-rate-group">
-                            <label>Tasa EUR/BS</label>
+                            <label>Tasa de Cambio (BS/$)</label>
                             <input type="number" id="detail-pay-rate" class="form-input" step="0.01">
                         </div>
                         <div class="preview-box">
@@ -428,7 +434,7 @@
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label>Nueva Tasa EUR/BS</label>
+                    <label>Nueva Tasa BS/$</label>
                     <input type="number" id="update-rate-input" class="form-input" step="0.01">
                 </div>
             </div>
@@ -562,7 +568,7 @@
         </div>
     </div>
 
-    <script src="app.js?v=10"></script>
+    <script src="app.js?v=11"></script>
 </body>
 
 </html>

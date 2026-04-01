@@ -16,9 +16,10 @@ async function hashPassword(plain) {
 }
 
 const defaultState = {
-    baseCostUSD: 100,
+    baseCostUSD: 55,
+    baseCostBS_USD: 70,
     currentRateEurBs: 45.0,
-    markupPercentage: 0.30,
+    markupPercentage: 0.00,
     teams: ['Los Tigres', 'Bravos', 'Cardenales', 'Águilas', 'Leones'],
     players: [],
     payments: [], // { id, playerId, amount, currency, rateEurBs, equivalentUsd, date }
@@ -314,25 +315,42 @@ function generateDummyData() {
 // Finance
 function getPlayerDebts(playerId) {
     const playerPayments = appState.payments.filter(p => p.playerId === playerId);
-    const paidUsd = playerPayments.reduce((acc, p) => acc + (p.equivalentUsd || 0), 0);
-    const remainingUsd = appState.baseCostUSD - paidUsd;
+    
+    // Calculamos el progreso proporcional (0 a 1)
+    let progress = 0;
+    let totalCreditUsd = 0; // Crédito total relativo al precio de $55
 
-    if (remainingUsd <= 0.001) return { remainingUsd: 0, remainingBs: 0, paidUsd };
+    playerPayments.forEach(p => {
+        if (p.currency === 'USD') {
+            const pProgress = p.amount / appState.baseCostUSD;
+            progress += pProgress;
+            totalCreditUsd += p.amount;
+        } else if (p.currency === 'BS') {
+            const nominalUsd = p.amount / (p.rateEurBs || appState.currentRateEurBs);
+            const pProgress = nominalUsd / appState.baseCostBS_USD;
+            progress += pProgress;
+            // El crédito en USD es el porcentaje pagado aplicado al costo base de $55
+            totalCreditUsd += (pProgress * appState.baseCostUSD);
+        }
+    });
 
-    const remainingEur = remainingUsd * (1 + appState.markupPercentage);
-    const remainingBs = remainingEur * appState.currentRateEurBs;
+    const remainingPercent = Math.max(0, 1 - progress);
+    const remainingUsd = remainingPercent * appState.baseCostUSD;
+    const remainingBs = remainingPercent * appState.baseCostBS_USD * appState.currentRateEurBs;
 
     return {
         remainingUsd: parseFloat(remainingUsd.toFixed(2)),
         remainingBs: parseFloat(remainingBs.toFixed(2)),
-        paidUsd: parseFloat(paidUsd.toFixed(2))
+        paidUsd: parseFloat(totalCreditUsd.toFixed(2))
     };
 }
 
 function calcEquivalentUsd(amount, currency, rateEurBs) {
     if (currency === 'USD') return amount;
     if (currency === 'BS') {
-        return (amount / rateEurBs) / (1 + appState.markupPercentage);
+        const nominalUsd = amount / rateEurBs;
+        const pProgress = nominalUsd / appState.baseCostBS_USD;
+        return pProgress * appState.baseCostUSD;
     }
     return 0;
 }
@@ -343,6 +361,8 @@ function renderApp() {
         el('sidebar-rate').textContent = (appState.currentRateEurBs || 0).toFixed(2) + ' Bs';
         const costInput = document.getElementById('setting-base-cost');
         if (costInput) costInput.value = appState.baseCostUSD;
+        const costBSInput = document.getElementById('setting-base-cost-bs');
+        if (costBSInput) costBSInput.value = appState.baseCostBS_USD;
         const markupInput = document.getElementById('setting-markup');
         if (markupInput) markupInput.value = (appState.markupPercentage || 0) * 100;
 
@@ -486,6 +506,7 @@ function setupEventListeners() {
                 if (appState.cloudConfig?.url) el('cloud-url').value = appState.cloudConfig.url;
                 if (appState.cloudConfig?.key) el('cloud-key').value = appState.cloudConfig.key;
                 el('setting-base-cost').value = appState.baseCostUSD;
+                el('setting-base-cost-bs').value = appState.baseCostBS_USD;
                 el('setting-markup').value = (appState.markupPercentage * 100).toFixed(0);
             }
             // Close sidebar on mobile after navigation
@@ -554,7 +575,8 @@ function setupEventListeners() {
     const detRat = el('detail-pay-rate');
     const updatePrev = () => {
         const eq = calcEquivalentUsd(parseFloat(detAmt.value) || 0, detCur.value, parseFloat(detRat.value) || appState.currentRateEurBs);
-        el('detail-pay-preview-usd').textContent = `$${eq.toFixed(2)} USD`;
+        const markupText = appState.markupPercentage > 0 ? ` <small style="font-weight:400; font-size:0.8rem; opacity:0.7;">(con recargo del ${(appState.markupPercentage * 100).toFixed(0)}%)</small>` : '';
+        el('detail-pay-preview-usd').innerHTML = `$${eq.toFixed(2)} USD ${markupText}`;
     };
     detAmt.addEventListener('input', updatePrev);
     detCur.addEventListener('change', () => {
@@ -609,6 +631,7 @@ function setupEventListeners() {
 
     bind('btn-save-settings', 'click', () => {
         appState.baseCostUSD = parseFloat(el('setting-base-cost').value);
+        appState.baseCostBS_USD = parseFloat(el('setting-base-cost-bs').value);
         appState.markupPercentage = parseFloat(el('setting-markup').value) / 100;
         saveData();
         renderApp();
